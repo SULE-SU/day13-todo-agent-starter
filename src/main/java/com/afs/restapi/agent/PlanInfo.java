@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +22,16 @@ public class PlanInfo {
     @JsonProperty("input")
     @JsonAlias({"parameters", "variables"})
     private Map<String, Object> variables;
+
+    private List<PlanStep> steps;
+
+    public List<PlanStep> getSteps() {
+        return steps;
+    }
+
+    public void setSteps(List<PlanStep> steps) {
+        this.steps = steps;
+    }
     
     public PlanInfo() {}
     

@@ -250,14 +250,36 @@ public class PlannerService {
     private PlanTaskResult parseAsDirectJson(String response) {
         try {
             JsonNode jsonNode = objectMapper.readTree(response);
-            PlanInfo planInfo = objectMapper.treeToValue(jsonNode, PlanInfo.class);
-            logger.info("Successfully parsed JSON format execution plan");
-            return new PlanTaskResult(Collections.singletonList(planInfo));
+
+            // 检查是否有steps字段
+            if (jsonNode.has("steps") && jsonNode.get("steps").isArray()) {
+                List<PlanInfo> planInfos = new ArrayList<>();
+                JsonNode stepsNode = jsonNode.get("steps");
+
+                for (JsonNode stepNode : stepsNode) {
+                    PlanStep planStep = objectMapper.treeToValue(stepNode, PlanStep.class);
+                    // 为保持兼容性，创建一个PlanInfo对象并设置其字段
+                    PlanInfo planInfo = new PlanInfo();
+                    planInfo.setFunctionName(planStep.getFunctionName());
+                    planInfo.setDescription(planStep.getDescription());
+                    planInfo.setVariables(planStep.getVariables());
+                    planInfos.add(planInfo);
+                }
+
+                logger.info("Successfully parsed JSON format execution plan with {} steps", planInfos.size());
+                return new PlanTaskResult(planInfos);
+            } else {
+                // 保持对旧格式的兼容性
+                PlanInfo planInfo = objectMapper.treeToValue(jsonNode, PlanInfo.class);
+                logger.info("Successfully parsed JSON format execution plan");
+                return new PlanTaskResult(Collections.singletonList(planInfo));
+            }
         } catch (JsonProcessingException e) {
             logger.error("JSON parsing failed: {}", response, e);
             throw new RuntimeException("Unable to parse AI's JSON response", e);
         }
     }
+
 
     /**
      * Parse execution plan from Markdown code blocks
@@ -303,9 +325,28 @@ public class PlannerService {
         for (FencedCodeBlock codeBlock : codeBlocks) {
             String code = codeBlock.getLiteral();
             try {
-                PlanInfo planInfo = objectMapper.readValue(code, PlanInfo.class);
-                planInfos.add(planInfo);
-                logger.debug("Successfully parsed code block: {}", planInfo.getFunctionName());
+                JsonNode jsonNode = objectMapper.readTree(code);
+
+                // 检查是否有steps字段
+                if (jsonNode.has("steps") && jsonNode.get("steps").isArray()) {
+                    JsonNode stepsNode = jsonNode.get("steps");
+
+                    for (JsonNode stepNode : stepsNode) {
+                        PlanStep planStep = objectMapper.treeToValue(stepNode, PlanStep.class);
+                        // 为保持兼容性，创建一个PlanInfo对象并设置其字段
+                        PlanInfo planInfo = new PlanInfo();
+                        planInfo.setFunctionName(planStep.getFunctionName());
+                        planInfo.setDescription(planStep.getDescription());
+                        planInfo.setVariables(planStep.getVariables());
+                        planInfos.add(planInfo);
+                        logger.debug("Successfully parsed code block array item: {}", planInfo.getFunctionName());
+                    }
+                } else {
+                    // 保持对旧格式的兼容性
+                    PlanInfo planInfo = objectMapper.treeToValue(jsonNode, PlanInfo.class);
+                    planInfos.add(planInfo);
+                    logger.debug("Successfully parsed code block: {}", planInfo.getFunctionName());
+                }
             } catch (Exception e) {
                 logger.warn("Failed to parse code block, skipping: {}", code, e);
             }
