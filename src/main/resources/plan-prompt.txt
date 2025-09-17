@@ -8,79 +8,62 @@
 
 3. 计划执行阶段：每一步需明确调用的工具及参数。
 
-请以 JSON 格式输出你的计划，每一步包含：
+请以 JSON 格式输出你的计划，使用steps数组包裹所有步骤，每个步骤包含：
 functionName：工具名称
 description：工具用途
 variables：输入参数
 
 示例输出：
-{"function":"updateById","description":"Update todo by id. Should set id, if not call findAll first.","schema":"{
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "type" : "object",
-  "properties" : {
-    "id" : {
-      "type" : "integer",
-      "format" : "int32"
+{
+  "steps": [
+    {
+      "functionName": "updateById",
+      "description": "Update todo by id. Should set id, if not call findAll first.",
+      "variables": {
+        "id": 1,
+        "newTodo": {
+          "done": false,
+          "id": 1,
+          "text": "示例文本"
+        }
+      }
     },
-    "newTodo" : {
-      "type" : "object",
-      "properties" : {
-        "done" : {
-          "type" : "boolean"
-        },
-        "id" : {
-          "type" : "integer",
-          "format" : "int32"
-        },
-        "text" : {
-          "type" : "string"
+    {
+      "functionName": "deleteById",
+      "description": "Delete todo by id",
+      "variables": {
+        "id": 2
+      }
+    },
+    {
+      "functionName": "create",
+      "description": "Create new todo. cannot set id, if set id, will be failed",
+      "variables": {
+        "todo": {
+          "done": false,
+          "text": "示例文本"
         }
-      },
-      "required" : [ "done", "id", "text" ]
+      }
+    },
+    {
+      "functionName": "findAll",
+      "description": "Get all todos",
+      "variables": { }
     }
-  },
-  "required" : [ "id", "newTodo" ],
-  "additionalProperties" : false
-}"}{"function":"deleteById","description":"Delete todo by id","schema":"{
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "type" : "object",
-  "properties" : {
-    "id" : {
-      "type" : "integer",
-      "format" : "int32"
-    }
-  },
-  "required" : [ "id" ],
-  "additionalProperties" : false
-}"}{"function":"create","description":"Create new todo. cannot set id, if set id, will be failed","schema":"{
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "type" : "object",
-  "properties" : {
-    "todo" : {
-      "type" : "object",
-      "properties" : {
-        "done" : {
-          "type" : "boolean"
-        },
-        "id" : {
-          "type" : "integer",
-          "format" : "int32"
-        },
-        "text" : {
-          "type" : "string"
-        }
-      },
-      "required" : [ "done", "id", "text" ]
-    }
-  },
-  "required" : [ "todo" ],
-  "additionalProperties" : false
-}"}{"function":"findAll","description":"Get all todos","schema":"{
-  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-  "type" : "object",
-  "properties" : { },
-  "required" : [ ],
-  "additionalProperties" : false
-}"}
+  ]
+}
+
+可使用的工具说明：
+1. findAll: 获取所有待办事项，无需参数
+2. create: 创建新的待办事项，参数为todo对象（不要设置id）
+3. updateById: 根据ID更新待办事项，需要提供id和newTodo对象
+4. deleteById: 根据ID删除待办事项，需要提供id
+
+重要提示：
+- 当用户要求更新todo时，如果未提供ID，应先调用findAll获取所有todo，然后根据描述匹配到对应ID
+- updateById需要提供id和newTodo参数，其中newTodo包含text和done字段
+- 确保输出的JSON格式正确且可解析
+- 只输出JSON格式，不要添加其他解释文字
+- 使用steps数组来包裹所有执行步骤
 
 请根据以上信息，生成完整且可执行的计划。
